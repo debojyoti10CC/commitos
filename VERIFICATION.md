@@ -4,7 +4,7 @@ Verified on 6 October 2026 with Node.js 24, Next.js 16.3.8, React 19.3, and Vite
 
 | Check                       | Result                                                                                                                                              |
 | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unit and service tests      | 236 tests passed across 19 files.                                                                                                                   |
+| Unit and service tests      | 253 tests passed across 19 files.                                                                                                                   |
 | TypeScript                  | Passed independently and as part of the final production build.                                                                       |
 | Production build            | Compiled, type checked, and generated all pages.                                                                                                    |
 | Records HTTP workflow       | 10 acceptance groups passed before the current voice upgrade.                                                                                        |
@@ -40,7 +40,7 @@ Mocked AI-provider tests verify source preservation, local fallback, prevention 
 
 ## Persistence and compatibility
 
-Records HTTP checks cover mixed-kind capture, disk reload, private reads, replay-safe retries, corrections, owner isolation, invalid input/date/origin rejection, the date-first speech regression, and the primary routes. A hosted-runtime regression proves an unconfigured server returns an actionable 503 before attempting file writes. Vercel deployments require Supabase environment variables; local file storage is blocked in serverless functions. Prerendered legacy Desk links use Next's browser redirect to the records dashboard.
+Records HTTP checks cover mixed-kind capture, disk reload, private reads, replay-safe retries, corrections, owner isolation, invalid input/date/origin rejection, the date-first speech regression, and the primary routes. Local `localhost` and `127.0.0.1` aliases work on the same development port with an explicit `APP_URL`; Vercel accepts only its own deployment host in addition to the canonical origin. A hosted-runtime regression proves an unconfigured server returns an actionable 503 before attempting file writes. Vercel deployments require Supabase environment variables; local file storage is blocked in serverless functions. Prerendered legacy Desk links use Next's browser redirect to the records dashboard.
 
 Eight concurrent retries with one capture key produced one record and one version increment. Changed text or source under the same request key was rejected. Existing task/session data remains intact and active stored tasks appear through a read-only record adapter.
 

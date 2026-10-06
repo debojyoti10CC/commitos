@@ -4,7 +4,6 @@ export function assertRequestOrigin(request: Request): void {
   const expected = new URL(process.env.APP_URL || request.url);
   const allowed = new Set([expected.origin]);
   if (
-    !process.env.APP_URL &&
     process.env.NODE_ENV !== "production" &&
     ["localhost", "127.0.0.1", "[::1]"].includes(expected.hostname)
   )
@@ -12,6 +11,12 @@ export function assertRequestOrigin(request: Request): void {
       allowed.add(
         `${expected.protocol}//${host}${expected.port ? `:${expected.port}` : ""}`,
       );
+  // Vercel's own immutable deployment hostname is safe for same-deployment
+  // requests such as signup on a preview URL. Keep the public canonical origin
+  // above as the redirect/cookie origin, and never trust an arbitrary Host header.
+  const deploymentHost = process.env.VERCEL === "1" ? process.env.VERCEL_URL : undefined;
+  if (deploymentHost && /^[a-z0-9-]+(?:\.[a-z0-9-]+)*\.vercel\.app$/i.test(deploymentHost))
+    allowed.add(`https://${deploymentHost}`);
   if (
     (origin && !allowed.has(origin)) ||
     (!origin && request.headers.get("sec-fetch-site") === "cross-site")
