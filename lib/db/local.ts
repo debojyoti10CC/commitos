@@ -1,8 +1,11 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { mkdir, open, readFile, readdir, rename, rm } from "node:fs/promises";
 import path from "node:path";
+import { isHostedRuntime, SupabaseConfigurationError } from "./supabase";
 
 export const dataDirectory = () => {
+  if (isHostedRuntime())
+    throw new SupabaseConfigurationError("Local demo storage is unavailable in hosted functions. Configure Supabase for durable records.");
   const directory = process.env.DEMO_DATA_DIR || path.join(process.cwd(), ".data");
   return path.resolve(/* turbopackIgnore: true */ directory);
 };
@@ -81,8 +84,8 @@ export async function localSigningKey(): Promise<Buffer> {
       throw new Error("SESSION_SECRET must contain at least 32 characters");
     return Buffer.from(supplied);
   }
-  if (process.env.DEMO_MODE === "false")
-    throw new Error("SESSION_SECRET must be configured");
+  if (isHostedRuntime() || process.env.DEMO_MODE === "false")
+    throw new SupabaseConfigurationError("SESSION_SECRET must be configured; hosted functions cannot create a file-backed signing key.");
   return withFileLock("session-key-init", async () => {
     const filename = path.join(dataDirectory(), "session-key");
     try {

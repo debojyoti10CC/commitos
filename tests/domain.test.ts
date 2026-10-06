@@ -25,6 +25,12 @@ import type { AppState, CalendarEvent, Commitment } from "../lib/types";
 const now = new Date("2026-10-05T03:30:00Z"); // Monday 09:00 in Kolkata.
 const day = "2026-10-05";
 describe("named calendar dates and spoken midnight", () => {
+  it.each(["tmrw", "tmr"])("resolves conventional %s shorthand in the user's timezone", (word) => {
+    const result = normalizeNaturalDate(`Submit before 10 AM ${word}`, { now: new Date("2026-10-06T16:02:00Z"), timezone: "Asia/Kolkata" });
+    expect(result.date).toBe("2026-10-07T04:30:00.000Z");
+    expect(result.warnings).toEqual([]);
+    expect(normalizeNaturalDate(`${word}land`, { now, timezone: "Asia/Kolkata" }).date).toBeNull();
+  });
   it.each([
     "IIT submission assignment by 10th October 12 a.m. and I need to get an update",
     "Submit by 10 October at 12 AM",

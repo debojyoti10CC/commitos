@@ -7,7 +7,7 @@ import {
   demoCookieOptions,
   validateDemoSession,
 } from "@/lib/auth";
-import { configuredSupabase, isDemoMode } from "@/lib/db/supabase";
+import { configuredSupabase, isDemoMode, SUPABASE_CONFIGURATION_MESSAGE } from "@/lib/db/supabase";
 
 export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
@@ -50,10 +50,9 @@ export async function proxy(request: NextRequest) {
     if (publiclyAccessible) return NextResponse.next();
     return NextResponse.json(
       {
-        error:
-          "Production authentication is not configured. Configure Supabase or enable DEMO_MODE.",
+        error: SUPABASE_CONFIGURATION_MESSAGE,
       },
-      { status: 503 },
+      { status: 503, headers: { "Cache-Control": "private, no-store" } },
     );
   }
   let response = NextResponse.next({ request });

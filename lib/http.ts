@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { ServiceError } from "./services";
 import { assertRequestOrigin } from "./origin";
+import { SupabaseConfigurationError } from "./db/supabase";
 export function assertSafeMutation(request: Request) {
   try {
     assertRequestOrigin(request);
@@ -33,6 +34,10 @@ export async function jsonBody(
   return value as Record<string, unknown>;
 }
 export function errorResponse(error: unknown) {
+  if (error instanceof SupabaseConfigurationError)
+    return NextResponse.json({ error: error.message }, {
+      status: error.status, headers: { "Cache-Control": "private, no-store" },
+    });
   if (error instanceof ZodError)
     return NextResponse.json(
       {

@@ -2,7 +2,7 @@ import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { localSigningKey } from "@/lib/db/local";
-import { configuredSupabase, isDemoMode } from "@/lib/db/supabase";
+import { configuredSupabase, isDemoMode, isHostedRuntime, SupabaseConfigurationError } from "@/lib/db/supabase";
 import { assertRequestOrigin } from "@/lib/origin";
 
 export const DEMO_COOKIE = "commitos_demo";
@@ -24,6 +24,7 @@ export async function createDemoSession(): Promise<{
   id: string;
   token: string;
 }> {
+  if (isHostedRuntime()) throw new SupabaseConfigurationError();
   const id = randomUUID();
   const payload = Buffer.from(
     JSON.stringify({ id, expires: Date.now() + 30 * 86400000 }),
@@ -36,6 +37,7 @@ export async function createDemoSession(): Promise<{
 export async function validateDemoSession(
   token: string | undefined,
 ): Promise<string | null> {
+  if (isHostedRuntime()) return null;
   if (!token || token.length > 500) return null;
   const [payload, signature] = token.split(".");
   if (!payload || !signature) return null;
@@ -81,9 +83,7 @@ export function requestCookie(
 }
 export async function serverAuthClient() {
   if (!configuredSupabase())
-    throw new Error(
-      "Authentication is not configured. Enable DEMO_MODE for a local demo.",
-    );
+    throw new SupabaseConfigurationError();
   const store = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

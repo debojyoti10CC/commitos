@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { briefRecordTitle } from "../lib/records/title";
 
 describe("semantic record headings", () => {
+  it("extracts the nominal submission topic without its possible extension", () => {
+    const text = "celo hackathon submission need to be one before 10 tmrw but can be streched to 12 noon";
+    expect(briefRecordTitle(text, "task", text)).toBe("Submit Celo hackathon");
+    expect(briefRecordTitle("membership renewal needs to be done by Friday", "task")).toBe("Renew Membership");
+  });
   it("turns the actual IIT submission statement into its core action", () => {
     const text = "IIT submission assignment by 10th October 12 a.m. and I need to get an update";
     expect(briefRecordTitle(text, "task", text)).toBe("Submit IIT assignment");

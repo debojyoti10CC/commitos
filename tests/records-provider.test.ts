@@ -37,6 +37,20 @@ const annotation = {
   inferred_fields: [],
 };
 describe("general record organization provider", () => {
+  it("retains the primary deadline and contextual check when AI proposes the conditional extension", async () => {
+    useAI();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response([
+      { ...annotation, title: "Submit Celo hackathon", kind: "task", collection: "Celo", deadline: "2026-10-07T06:30:00Z" },
+      { ...annotation, index: 1, title: "Check that", kind: "note", collection: "Notes", deadline: "2026-10-06T02:30:00Z" },
+    ])));
+    const source = "celo hackathon submission need to be one before 10 tmrw but can be streched to 12 noon , need to check on that once at 8 am";
+    const result = await organizeWithProvider(source, { ...context, now: new Date("2026-10-06T16:02:00Z"), projects: ["Celo"] });
+    expect(result.provider).toBe("gemini");
+    expect(result.entries.map((entry) => entry.content).join(" ")).toBe(source);
+    expect(result.entries.map((entry) => entry.deadline)).toEqual(["2026-10-07T04:30:00.000Z", "2026-10-07T02:30:00.000Z"]);
+    expect(result.entries[1]).toMatchObject({ title: "Check Celo hackathon submission", kind: "task", collection: "Celo" });
+    expect(result.entries[0].interpretation.warnings.some((warning) => /possible extension/.test(warning))).toBe(true);
+  });
   it("keeps general capture working without a provider key", async () => {
     vi.stubEnv("GEMINI_API_KEY", "");
     const fetch = vi.fn();

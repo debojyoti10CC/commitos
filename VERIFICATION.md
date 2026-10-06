@@ -4,8 +4,8 @@ Verified on 6 October 2026 with Node.js 24, Next.js 16.3.8, React 19.3, and Vite
 
 | Check                       | Result                                                                                                                                              |
 | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unit and service tests      | 225 tests passed across 18 files.                                                                                                                   |
-| TypeScript                  | Passed as part of the final production build.                                                                       |
+| Unit and service tests      | 236 tests passed across 19 files.                                                                                                                   |
+| TypeScript                  | Passed independently and as part of the final production build.                                                                       |
 | Production build            | Compiled, type checked, and generated all pages.                                                                                                    |
 | Records HTTP workflow       | 10 acceptance groups passed before the current voice upgrade.                                                                                        |
 | Compatibility HTTP workflow | 14 acceptance groups passed for existing stored tasks and integration APIs.                                                                         |
@@ -34,13 +34,13 @@ Voice capture now records microphone audio and uses local faster-whisper 1.2.1 w
 
 A 7.253-second synthetic English utterance became exactly “I need to submit my assignment for IIT Patna by 10 October at 12 a.m. Call Ravi tomorrow at 10 a.m.” WebM transcription took about 5.7 seconds in the worker smoke test. The application bridge and records service saved two tasks with short headings and independent correct deadlines, then loaded identical records from disk. A retry caused no extra version increment. These tests used synthetic SAPI English speech, not a human Indian-accent recording; actual microphone quality and Hindi accuracy remain untested.
 
-Conversational interpretation now handles polite, passive, filler, event, and idea phrasing and separates explicit second requests before date parsing. Known spoken names resolve with whole-name boundaries. Garbled fragments remain undated notes; conflicting noon/night wording produces a warning instead of a fabricated deadline. Original transcript chunks, explicit associations, and locally resolved dates remain preserved under optional enrichment.
+Conversational interpretation now handles polite, passive, filler, event, and idea phrasing and separates explicit second requests before date parsing. The reported Celo sentence now produces a submission due October 7 at 10 a.m. and a separate 8 a.m. check, while retaining the conditional noon extension in the original wording with a warning. The AM/PM choice and inherited date are identified as inferences. Known spoken names resolve with whole-name boundaries. Garbled fragments remain undated notes; conflicting noon/night wording produces a warning instead of a fabricated deadline. Original transcript chunks, explicit associations, and locally resolved dates remain preserved under optional enrichment.
 
 Mocked AI-provider tests verify source preservation, local fallback, prevention of invented dates/people, preservation of locally parsed dates when AI proposes a different date, and retention of unknown/invalid date warnings. No live Gemini request was used for verification.
 
 ## Persistence and compatibility
 
-Records HTTP checks cover mixed-kind capture, disk reload, private reads, replay-safe retries, corrections, owner isolation, invalid input/date/origin rejection, the date-first speech regression, and the primary routes. Prerendered legacy Desk links use Next's browser redirect to the records dashboard.
+Records HTTP checks cover mixed-kind capture, disk reload, private reads, replay-safe retries, corrections, owner isolation, invalid input/date/origin rejection, the date-first speech regression, and the primary routes. A hosted-runtime regression proves an unconfigured server returns an actionable 503 before attempting file writes. Vercel deployments require Supabase environment variables; local file storage is blocked in serverless functions. Prerendered legacy Desk links use Next's browser redirect to the records dashboard.
 
 Eight concurrent retries with one capture key produced one record and one version increment. Changed text or source under the same request key was rejected. Existing task/session data remains intact and active stored tasks appear through a read-only record adapter.
 

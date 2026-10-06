@@ -101,8 +101,9 @@ export async function organizeWithProvider(
         const canonical = (context.contacts ?? []).find((known) => matchRecordNames(stated, [known]).length > 0) ?? stated;
         if (!contacts.some((known) => known.toLowerCase() === canonical.toLowerCase())) contacts.push(canonical);
       }
-      const kind = entry.interpretation.inferred_fields.includes("kind") ? match.kind : entry.kind;
-      const collection = fallback.associations.collections.includes(entry.collection)
+      const isReferenceCheck = entry.interpretation.inferred_fields.includes("reference");
+      const kind = !isReferenceCheck && entry.interpretation.inferred_fields.includes("kind") ? match.kind : entry.kind;
+      const collection = isReferenceCheck || fallback.associations.collections.includes(entry.collection)
         ? entry.collection
         : match.collection;
       const dateText = entry.content.replace(/https?:\/\/\S+|www\.\S+/gi, "");
@@ -128,7 +129,7 @@ export async function organizeWithProvider(
         Date.parse(entry.deadline) !== Date.parse(match.deadline);
       return {
         ...entry,
-        title: briefRecordTitle(match.title, kind, entry.content),
+        title: briefRecordTitle(isReferenceCheck ? entry.title : match.title, kind, entry.content),
         kind,
         collection,
         tags: match.tags,

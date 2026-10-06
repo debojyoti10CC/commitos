@@ -3,7 +3,7 @@ import type { RecordKind } from "./types";
 const months = "january|february|march|april|may|june|july|august|september|october|november|december";
 const ordinal = "(?:\\d{1,2}(?:st|nd|rd|th)?|first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|thirteenth|fourteenth|fifteenth|sixteenth|seventeenth|eighteenth|nineteenth|twentieth|twenty[ -](?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth)|thirtieth|thirty[ -]first)";
 const clock = "(?:(?:\\d{1,2}(?::[0-5]\\d)?|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)(?:\\s*(?:a\\.?m\\.?|p\\.?m\\.?))?|noon|midnight)";
-const relativeDay = "(?:day after tomorrow|today|tomorrow|tonight|(?:(?:this|next)\\s+)?(?:sunday|monday|tuesday|wednesday|thursday|friday|saturday|week|weekend)|(?:this|next)\\s+(?:morning|afternoon|evening))";
+const relativeDay = "(?:day after tomorrow|today|tomorrow|tmrw|tmr|tonight|(?:(?:this|next)\\s+)?(?:sunday|monday|tuesday|wednesday|thursday|friday|saturday|week|weekend)|(?:this|next)\\s+(?:morning|afternoon|evening))";
 const date = `(?:${ordinal}(?:\\s+of)?\\s+(?:${months})(?:,?\\s+\\d{4})?|(?:${months})\\s+${ordinal}(?:,?\\s+\\d{4})?|\\d{4}-\\d{2}-\\d{2}(?:T\\S+)?|${relativeDay})`;
 const action = /^(?:do not|don't|never|submit|finish|complete|send|write|draft|create|build|fix|review|read|pay|buy|book|call|email|message|text|remind|follow up|prepare|update|upload|download|export|import|save|open|print|discuss|compare|schedule|reply|check|cancel|renew|pick up|bring|clean|organize|make|ship|publish|record|edit|learn|study|practice|water|feed|take|order|return|collect|apply|get|ask)\b/i;
 
@@ -17,7 +17,7 @@ function brief(value: string): boolean {
 
 /** Normalize an interpretation copy, never the saved transcript. */
 export function conversationalText(value: string): string {
-  return value.trim()
+  const normalized = value.trim()
     .replace(/[’]/g, "'")
     .replace(/^\s*(?:(?:um|uh|erm|hey|okay|ok|well|so|oh|please|and|then|also|plus)[,.:]?\s+)+/i, "")
     .replace(/^(i|we)\s+(?:also|still)\s+/i, "$1 ")
@@ -29,6 +29,18 @@ export function conversationalText(value: string): string {
     .replace(/^(?:i|we) need ((?:a|an|the) (?:update|report|draft|document|reply|response) from\b)/i, "Get $1")
     .replace(/^(?:make a note(?: that)?|note that|just so (?:i|we) remember)\s*[,.:]?\s+/i, "Note: ")
     .replace(/^i was thinking(?: that)?\s+(?=(?:we|i) could|maybe|what if)/i, "Idea: ");
+  // An obligation attached to an action noun does not require a perfect passive verb.
+  // Keep only its subject and temporal clause in the interpretation copy.
+  const nominal = /^([^:;.!?\n]+?\b(?:submission|payment|renewal))\s+(?:needs? to be|has to be|must be|should be)\b([\s\S]*)$/i.exec(normalized);
+  if (nominal) {
+    const timing = /\b(?:by|before|on|at|due)\b[\s\S]*/i.exec(nominal[2]);
+    if (timing || /^\s*(?:done|completed|submitted|sent|paid|renewed)\b/i.test(nominal[2])) {
+      let subject = actionFromNoun(nominal[1]);
+      subject = subject.replace(/^(Submit|Pay|Renew)\s+([a-z])/u, (_, verb, first) => `${verb} ${first.toLocaleUpperCase()}`);
+      return `${subject}${timing ? ` ${timing[0]}` : ""}`;
+    }
+  }
+  return normalized;
 }
 
 function activeTask(value: string): string {
@@ -105,6 +117,7 @@ export function briefRecordTitle(title: string, kind: RecordKind, content?: stri
     .replace(/^(?:i was thinking(?: that)?|i think(?: that)?|i have an idea(?: that)?|what if (?:we|i)(?: could)?|(?:we|i) could)\s+/i, "")
     .replace(/\s+(?:and|but)\s+(?:then\s+)?(?:i|we)\s+(?:also\s+)?(?:need|want|have)\s+to\b[\s\S]*$/i, "")
     .replace(/\s+(?:it |this |that )?(?:will|would|should)(?: probably)? take\b[\s\S]*$/i, "");
+  if (kind === "task") value = value.replace(/\s+but\s+(?:(?:it|this|that)\s+)?(?:can|could|may|might)\s+(?:be\s+)?[^.!?;]*\b(?:to|until)\s+(?=\d|noon|midnight|tomorrow|tmrw|tmr|next\b)[\s\S]*$/i, "");
   if (kind === "task") value = value.replace(/\s+(?:maybe|i guess|you know|if possible)[.,?!]*$/i, "");
   value = stripTiming(value, kind);
   if (kind === "reference") {

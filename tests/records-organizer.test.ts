@@ -299,6 +299,62 @@ describe("conversational English records", () => {
   });
 });
 
+describe("nominal obligations and conditional deadline checks", () => {
+  const evening = { now: new Date("2026-10-06T16:02:00Z"), timezone: "Asia/Kolkata", projects: ["Celo"] };
+  const reported = "celo hackathon submission need to be one before 10 tmrw but can be streched to 12 noon , need to check on that once at 8 am";
+
+  it("keeps the reported primary deadline, conditional extension, and separate check", () => {
+    const result = organizeCapture(reported, evening);
+    expect(result.entries.map((entry) => entry.content).join(" ")).toBe(reported);
+    expect(result.entries.map((entry) => entry.kind)).toEqual(["task", "task"]);
+    expect(result.entries.map((entry) => entry.title)).toEqual(["Submit Celo hackathon", "Check Celo hackathon submission"]);
+    expect(result.entries.map((entry) => entry.deadline)).toEqual(["2026-10-07T04:30:00.000Z", "2026-10-07T02:30:00.000Z"]);
+    expect(result.entries.map((entry) => entry.collection)).toEqual(["Celo", "Celo"]);
+    expect(result.entries[0].interpretation.warnings.some((warning) => /possible extension to 12 noon/.test(warning))).toBe(true);
+    expect(result.entries[0].interpretation.warnings.some((warning) => /AM\/PM was inferred as AM/.test(warning))).toBe(true);
+    expect(result.entries[0].interpretation.inferred_fields).toContain("deadline");
+    expect(result.entries[1].interpretation.inferred_fields).toEqual(expect.arrayContaining(["deadline", "reference"]));
+    expect(result.associations.collections).toEqual(["Celo"]);
+  });
+
+  it("inherits tomorrow for the check even when today's 8 AM is still in the future", () => {
+    const result = organizeCapture(reported, { ...evening, now: new Date("2026-10-06T01:00:00Z") });
+    expect(result.entries[1].deadline).toBe("2026-10-07T02:30:00.000Z");
+    expect(result.entries[1].interpretation.warnings.some((warning) => /preceding task's stated date/.test(warning))).toBe(true);
+  });
+
+  it("handles a different nominal obligation without making fallback categories into projects", () => {
+    const text = "rent payment needs to be done before 10 tmr but might be pushed to 12 noon, need to check that at 8 am";
+    const result = organizeCapture(text, evening);
+    expect(result.entries.map((entry) => entry.content).join(" ")).toBe(text);
+    expect(result.entries.map((entry) => entry.title)).toEqual(["Pay Rent", "Check Rent payment"]);
+    expect(result.entries.map((entry) => entry.collection)).toEqual(["Personal", "Personal"]);
+    expect(result.entries.map((entry) => entry.deadline)).toEqual(["2026-10-07T04:30:00.000Z", "2026-10-07T02:30:00.000Z"]);
+    expect(result.associations.collections).toEqual([]);
+  });
+
+  it("preserves an explicitly stated PM deadline even if a possible limit conflicts", () => {
+    const result = organizeCapture("Celo submission needs to be done before 10 PM tmrw but could be extended to 12 noon", evening);
+    expect(result.entries[0].deadline).toBe("2026-10-07T16:30:00.000Z");
+    expect(result.entries[0].interpretation.warnings.some((warning) => /AM\/PM was inferred/.test(warning))).toBe(false);
+    expect(result.entries[0].interpretation.warnings.some((warning) => /original deadline remains/.test(warning))).toBe(true);
+  });
+
+  it("honors the check's own stated day instead of inheriting the primary date", () => {
+    const result = organizeCapture("Celo submission needs to be done before 10 AM tmrw, need to check that today at 8 AM", evening);
+    expect(result.entries[1].deadline).toBe("2026-10-06T02:30:00.000Z");
+    expect(result.entries[1].interpretation.warnings.some((warning) => /preceding task's stated date/.test(warning))).toBe(false);
+  });
+
+  it("does not convert prose about optional submissions or shorthand forecasts into obligations", () => {
+    for (const text of ["The submission needs to be optional", "Note: tmrw the forecast is rain", "The renewal needs to be affordable"]) {
+      const result = organizeCapture(text, evening);
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0]).toMatchObject({ content: text, kind: "note", deadline: null });
+    }
+  });
+});
+
 describe("deadline time remaining", () => {
   const created = "2026-10-05T10:00:00Z";
   const due = "2026-10-05T14:00:00Z";

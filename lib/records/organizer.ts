@@ -1,4 +1,5 @@
 import { normalizeNaturalDate } from "../ai/parser";
+import { localDate } from "../scheduling/time";
 import { briefRecordTitle, conversationalText } from "./title";
 import type { Commitment } from "../types";
 import type {
@@ -16,7 +17,9 @@ const passiveTask = /^(?:the |my |our )?[^.!?;]+?\s+(?:needs? to be|has to be|mu
 const groupedKind = /^(task|to[ -]?do|note|idea|event|reference|link|resource)\s+for\s+(?:project\s+)?([^:\n]+)\s*:/i;
 const reservedLabels = /^(?:task|to[ -]?do|note|notes|idea|event|reference|link|resource|project|collection|contact|deadline|remember|https?)$/i;
 const collectionPrefix = /^([A-Z][\p{L}\p{N}'’&_-]*(?:\s+[A-Z][\p{L}\p{N}'’&_-]*){0,5}):\s*/u;
-const temporalSurface = /\b(?:today|tomorrow|tonight|day after tomorrow|(?:this|next)\s+(?:week|weekend)|sunday|monday|tuesday|wednesday|thursday|friday|saturday|january|february|march|april|may|june|july|august|september|october|november|december|noon|midnight|morning|afternoon|evening|before (?:my |the )?class|soon|later|sometime|eventually|end of (?:the )?(?:week|month))\b|\b\d{4}-\d{2}-\d{2}\b|\b\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)\b|\b(?:at|by|before|around|until|about)\s+(?:\d{1,2}(?::\d{2})?|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\b|\bin\s+(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:hours?|hrs?|minutes?|mins?)\b/i;
+const temporalSurface = /\b(?:today|tomorrow|tmrw|tmr|tonight|day after tomorrow|(?:this|next)\s+(?:week|weekend)|sunday|monday|tuesday|wednesday|thursday|friday|saturday|january|february|march|april|may|june|july|august|september|october|november|december|noon|midnight|morning|afternoon|evening|before (?:my |the )?class|soon|later|sometime|eventually|end of (?:the )?(?:week|month))\b|\b\d{4}-\d{2}-\d{2}\b|\b\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)\b|\b(?:at|by|before|around|until|about)\s+(?:\d{1,2}(?::\d{2})?|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\b|\bin\s+(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:hours?|hrs?|minutes?|mins?)\b/i;
+const statedDay = /\b(?:today|tomorrow|tmrw|tmr|tonight|sunday|monday|tuesday|wednesday|thursday|friday|saturday|january|february|march|april|may|june|july|august|september|october|november|december)\b|\b\d{4}-\d{2}-\d{2}\b/i;
+const referringCheck = /^(?:(?:i|we)\s+)?(?:(?:need|have|want)\s+to\s+|remember\s+to\s+)?(?:check|follow\s+up|review)\b[^.!?;]*\b(?:that|this|it)\b/i;
 const uncertainDate = /\b(?:soon|later|next week|(?:this|next) weekend|end of (?:the )?(?:week|month)|sometime|eventually)\b/i;
 const urlPattern = /https?:\/\/[^\s<>]+|www\.[^\s<>]+/gi;
 const nameToken = "(?!(?:Today|Tomorrow|Tonight|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|Next|AM|PM)\\b)[A-Z][\\p{L}\\p{N}'’-]*";
@@ -144,8 +147,9 @@ function startsIntent(text: string): boolean {
 function sentencePieces(text: string): string[] {
   const pieces: string[] = [];
   let start = 0;
-  for (const match of text.matchAll(/(?<=[.!?;])\s+/g)) {
+  for (const match of text.matchAll(/(?<=[.!?;,])\s+/g)) {
     if (!startsIntent(text.slice(match.index + match[0].length))) continue;
+    if (text[match.index - 1] === "," && !["task", "event"].includes(classification(bodyFor(text.slice(start, match.index))).kind)) continue;
     pieces.push(text.slice(start, match.index).trim());
     start = match.index + match[0].length;
   }
@@ -219,11 +223,35 @@ function bodyFor(content: string): string {
     .replace(/^(?:project|collection)\s*:[^\n]+?\s+[-–—]\s+/i, "");
 }
 
-function recordDeadline(text: string, kind: RecordKind, context: OrganizeContext) {
+function recordDeadline(text: string, kind: RecordKind, context: OrganizeContext): { deadline: string | null; inferred: boolean; warnings: string[] } {
   const withoutUrls = text.replace(urlPattern, "");
   const eligible = kind === "task" || kind === "event" || /\b(?:due|deadline)\b/i.test(withoutUrls);
   const instant = /\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})\b/i.exec(withoutUrls);
   if (!eligible || (!instant && !temporalSurface.test(withoutUrls))) return { deadline: null, inferred: false, warnings: [] as string[] };
+  // A conditional later limit is information about the deadline, not a replacement.
+  const extension = /\bbut\s+(?:(?:it|this|that|the deadline)\s+)?(?:can|could|may|might)\s+(?:be\s+)?[^;\n]*?\b(?:to|until)\s+([^;\n]+)/i.exec(withoutUrls);
+  if (extension && temporalSurface.test(extension[1])) {
+    const primaryText = withoutUrls.slice(0, extension.index).trim();
+    let primary = recordDeadline(primaryText, kind, context);
+    const alternativeText = extension[1].replace(/[\s,.;!?]+$/, "");
+    const warnings = [...primary.warnings, `A possible extension to ${alternativeText} was kept in the text; the original deadline remains in effect.`];
+    if (primary.deadline) {
+      const day = localDate(new Date(primary.deadline), context.timezone);
+      const alternative = normalizeNaturalDate(`${alternativeText}${statedDay.test(alternativeText) ? "" : ` on ${day}`}`, context);
+      const clock = /\b(by|before|at|around|about|until)\s+(\d{1,2})(?::([0-5]\d))?\s*(a\.?m\.?|p\.?m\.?)?\b/i.exec(primaryText);
+      if (alternative.date && clock && !clock[4] && Number(clock[2]) >= 1 && Number(clock[2]) <= 12 && Date.parse(primary.deadline) > Date.parse(alternative.date)) {
+        const amText = `${primaryText.slice(0, clock.index)}${clock[1]} ${clock[2]}${clock[3] ? `:${clock[3]}` : ""} AM ${primaryText.slice(clock.index + clock[0].length)}`;
+        const morning = normalizeNaturalDate(amText, context);
+        if (morning.date && localDate(new Date(morning.date), context.timezone) === day && Date.parse(morning.date) <= Date.parse(alternative.date)) {
+          primary = { deadline: morning.date, inferred: true, warnings: morning.warnings };
+          const index = warnings.findIndex((warning) => /AM\/PM was inferred/.test(warning));
+          if (index >= 0) warnings.splice(index, 1);
+          warnings.push(`AM/PM was inferred as AM because the original deadline precedes the possible ${alternativeText} extension; confirm the time.`);
+        }
+      }
+    }
+    return { ...primary, warnings };
+  }
   if (instant) {
     const day = instant[0].slice(0, 10);
     const validDay = Number.isFinite(Date.parse(`${day}T00:00:00Z`)) && new Date(`${day}T00:00:00Z`).toISOString().slice(0, 10) === day;
@@ -253,11 +281,14 @@ export function organizeCapture(text: string, context: OrganizeContext): Organiz
   const segments = splitCapture(text);
   const combined = segments.length > 50;
   if (combined) segments.splice(49, segments.length - 49, { content: segments.slice(49).map((segment) => segment.content).join("\n"), collection: null });
+  let preceding: OrganizedRecord | null = null;
+  let precedingDayWasStated = false;
   const entries: OrganizedRecord[] = segments.map((segment, index) => {
     const content = segment.content;
     const originalBody = bodyFor(content);
     const body = conversationalText(originalBody);
     const classified = classification(originalBody);
+    const refersToPrevious = preceding && referringCheck.test(body) ? preceding : null;
     const knownProjects = matchRecordNames(content, context.projects);
     const contactNames = unique([...matchRecordNames(content, context.contacts), ...explicitContacts(body).map((name) => canonicalName(name, context.contacts))]);
     const statedCollection = explicitCollection(content) ?? segment.collection;
@@ -266,11 +297,18 @@ export function organizeCapture(text: string, context: OrganizeContext): Organiz
     const forName = /\bfor\s+([A-Z][\p{L}\p{N}'’_-]*(?:\s+[A-Z][\p{L}\p{N}'’_-]*){0,3})(?=\s*(?:[.,;:!?]|$|\b(?:by|on|before|tomorrow|today|tonight|next)\b))/u.exec(body)?.[1];
     const namedFor = forName && !contactNames.some((name) => name.toLowerCase() === forName.toLowerCase()) && !/\b(?:gift|birthday|call|email|message|send|reply|update)\b/i.test(body) ? forName : null;
     const associated = explicit ?? knownProjects[0] ?? namedFor;
-    const deadline = recordDeadline(body, classified.kind, context);
+    const inheritedDay = refersToPrevious?.deadline && precedingDayWasStated && !statedDay.test(body)
+      ? localDate(new Date(refersToPrevious.deadline), context.timezone)
+      : null;
+    const deadline = recordDeadline(`${body}${inheritedDay ? ` on ${inheritedDay}` : ""}`, classified.kind, context);
+    if (inheritedDay) {
+      deadline.inferred = true;
+      deadline.warnings.push(`The check uses the preceding task's stated date (${inheritedDay}).`);
+    }
     const explicitTags = [...content.matchAll(/(?:^|\s)#([\p{L}\p{N}_-]+)/gu)].map((match) => match[1].toLowerCase());
     const inferredTags = topicRules.filter(([, pattern]) => pattern.test(body)).map(([tag]) => tag);
     const warnings = [...deadline.warnings];
-    const collection = boundLabels([associated ?? fallbackCollection(classified.kind, body)], "collection", warnings)[0];
+    const collection = boundLabels([associated ?? refersToPrevious?.collection ?? fallbackCollection(classified.kind, body)], "collection", warnings)[0];
     const contacts = boundLabels(contactNames, "contact", warnings);
     const tags = boundLabels(unique([...explicitTags, ...inferredTags]), "tag", warnings);
     if (associated) associations.collections.push(collection);
@@ -284,15 +322,22 @@ export function organizeCapture(text: string, context: OrganizeContext): Organiz
       ...(!explicit ? ["collection"] : []),
       ...(inferredTags.length ? ["tags"] : []),
       ...(deadline.inferred ? ["deadline"] : []),
+      ...(refersToPrevious ? ["reference"] : []),
     ];
-    return {
-      title: briefRecordTitle(content, classified.kind, content), content, kind: classified.kind, collection,
+    const referencedTitle = refersToPrevious
+      ? `Check ${refersToPrevious.title.replace(/^Submit\s+(.+)$/i, "$1 submission").replace(/^Pay\s+(.+)$/i, "$1 payment").replace(/^Renew\s+(.+)$/i, "$1 renewal")}`
+      : content;
+    const record: OrganizedRecord = {
+      title: briefRecordTitle(referencedTitle, classified.kind, content), content, kind: classified.kind, collection,
       tags, contacts, deadline: deadline.deadline, source: "text",
       interpretation: {
         provider: "local", confidence: warnings.length ? 0.65 : classified.explicit ? 0.98 : classified.kind === "note" ? 0.76 : 0.88,
         warnings: unique(warnings), inferred_fields,
       },
     };
+    preceding = record;
+    precedingDayWasStated = statedDay.test(body) || !!inheritedDay;
+    return record;
   });
   return { entries, provider: "local", associations: { collections: unique(associations.collections).slice(0, 50), contacts: unique(associations.contacts).slice(0, 50) } };
 }

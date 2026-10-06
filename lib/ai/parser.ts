@@ -72,7 +72,8 @@ export function normalizeNaturalDate(
   const timezone = validTimezone(context.timezone)
     ? context.timezone
     : "Asia/Kolkata";
-  const lower = text.toLowerCase();
+  // Conventional shorthand changes only the interpretation copy, never the source.
+  const lower = text.toLowerCase().replace(/\b(?:tmrw|tmr)\b/g, "tomorrow");
   const warnings: string[] = [];
   if (!validTimezone(context.timezone))
     warnings.push("Invalid timezone; using Asia/Kolkata.");
