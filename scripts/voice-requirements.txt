@@ -1,0 +1,4 @@
+# Official PyPI release; setup confines its dependencies to .voice/venv.
+faster-whisper==1.2.1
+# PyAV 19 removed metadata_errors, still used by this Whisper release's decoder.
+av==16.0.1

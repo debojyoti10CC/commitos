@@ -1,0 +1,214 @@
+.intro,
+.create,
+.list,
+.empty,
+.error,
+.token,
+.actions {
+  --device-text: var(--text, #111);
+  --device-muted: var(--muted, #666);
+  --device-line: var(--border, #d5d5d5);
+  --device-surface: var(--surface, #fff);
+  --device-soft: var(--surface-subtle, #f4f4f4);
+  --device-inverse: var(--accent-fg, #fff);
+}
+.intro {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: var(--device-soft);
+  border: 1px solid var(--device-line);
+  border-left: 3px solid var(--device-text);
+  margin: 0 0 24px;
+}
+.intro > svg {
+  height: 35px;
+  width: 35px;
+  padding: 7px;
+  border: 1px solid var(--device-text);
+  color: var(--device-text);
+  border-radius: 0;
+}
+.intro p {
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--device-muted);
+  margin: 0;
+}
+.intro :global(.button) {
+  border: 1px solid var(--device-text);
+  border-radius: 2px;
+  background: var(--device-text);
+  color: var(--device-inverse);
+  font-size: 13px;
+}
+.create {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  margin: 14px 0 26px;
+}
+.create label {
+  flex: 1;
+}
+.create label > span {
+  color: var(--device-text);
+  font-size: 13px;
+}
+.create input {
+  border-radius: 2px !important;
+  border-color: var(--device-line) !important;
+  background: var(--device-surface) !important;
+  color: var(--device-text);
+}
+.create input:focus {
+  border-color: var(--device-text) !important;
+  box-shadow: 0 0 0 2px var(--device-soft) !important;
+}
+.create :global(.button) {
+  border-radius: 2px;
+  border-color: var(--device-text);
+  color: var(--device-text);
+  background: var(--device-surface);
+  font-size: 13px;
+}
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  counter-reset: devices;
+}
+.list li {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 15px;
+  padding: 18px 0;
+  border-top: 1px solid var(--device-line);
+  counter-increment: devices;
+}
+.list li::before {
+  content: counter(devices, decimal-leading-zero);
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+  color: var(--device-muted);
+}
+.list strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 550;
+  color: var(--device-text);
+}
+.list small {
+  display: block;
+  margin-top: 5px;
+  color: var(--device-muted);
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.7;
+}
+.list :global(.button) {
+  border-radius: 2px;
+  font-size: 12px;
+  color: var(--device-text);
+  border: 1px solid var(--device-line);
+}
+.list :global(.button):hover:not(:disabled) {
+  border-color: var(--device-text);
+  background: var(--device-soft);
+}
+.empty {
+  color: var(--device-muted);
+  font-size: 13px;
+  padding: 17px 0;
+  line-height: 1.7;
+}
+.error {
+  color: var(--device-text);
+  font-size: 13px;
+  padding: 13px 15px;
+  border: 1px solid var(--device-text);
+  border-left: 3px solid var(--device-text);
+  background: var(--device-soft);
+  margin-bottom: 20px;
+}
+.error :global(.button) {
+  font-size: 12px;
+  color: var(--device-text);
+}
+.token {
+  display: block;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 14px;
+  line-height: 1.8;
+  padding: 22px;
+  background: var(--device-soft);
+  color: var(--device-text);
+  border: 1px dashed var(--device-text);
+  border-radius: 0;
+  user-select: all;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+.actions :global(.button) {
+  border-radius: 2px;
+  border-color: var(--device-text);
+  background: var(--device-surface);
+  color: var(--device-text);
+}
+.actions :global(.button):first-child {
+  background: var(--device-text);
+  color: var(--device-inverse);
+}
+@media (max-width: 640px) {
+  .intro,
+  .create {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .intro {
+    padding: 18px;
+    gap: 14px;
+  }
+  .intro > svg {
+    height: 35px;
+    width: 35px;
+  }
+  .intro p {
+    font-size: 14px;
+  }
+  .intro :global(.button) {
+    min-height: 42px;
+  }
+  .create {
+    gap: 15px;
+  }
+  .create input {
+    font-size: 16px;
+  }
+  .create :global(.button) {
+    min-height: 43px;
+  }
+  .list li {
+    gap: 10px;
+    grid-template-columns: 21px minmax(0, 1fr) auto;
+  }
+  .list small {
+    font-size: 11px;
+  }
+  .token {
+    font-size: 13px;
+    padding: 18px;
+  }
+  .actions :global(.button) {
+    font-size: 13px;
+    min-height: 41px;
+  }
+}

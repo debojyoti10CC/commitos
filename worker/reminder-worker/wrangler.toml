@@ -1,0 +1,9 @@
+name = "commitos-reminders"
+main = "index.ts"
+compatibility_date = "2026-10-01"
+
+[triggers]
+crons = ["*/5 * * * *"]
+
+# APP_URL and CRON_SECRET are configured using `wrangler secret put`.
+# The same CRON_SECRET must be configured on the Next.js application.

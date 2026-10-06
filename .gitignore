@@ -1,0 +1,15 @@
+node_modules/
+.next/
+.env*
+!.env.example
+.demo-data/
+.data/
+.voice/
+.wrangler/
+*.tsbuildinfo
+coverage/
+work/
+__pycache__/
+*.pyc
+preview*.png
+preview*.jpg

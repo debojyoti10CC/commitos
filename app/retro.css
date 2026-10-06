@@ -1,0 +1,332 @@
+/* Classic desktop chrome with restrained colours around the working tools. */
+:root,
+.dark {
+  --canvas: #c7dcd8;
+  --surface: #fffdf8;
+  --surface-subtle: #ebe7ed;
+  --surface-raised: #dedde4;
+  --text: #182125;
+  --muted: #526167;
+  --border: #879390;
+  --accent: #17635e;
+  --accent-hover: #10524f;
+  --accent-foreground: #fff;
+  --retro-teal: #17635e;
+  --retro-teal-soft: #dcefe9;
+  --retro-purple: #584478;
+  --retro-purple-soft: #e8e0f3;
+  --retro-amber: #7f5413;
+  --retro-amber-soft: #faedc4;
+  --retro-danger: #833f36;
+  --retro-danger-soft: #f6e1d8;
+  --retro-desktop-dot: #94b4ad;
+  --font-sans: Tahoma, Geneva, Arial, sans-serif;
+  --font-mono: "Courier New", monospace;
+  color-scheme: light;
+}
+body {
+  background: var(--canvas);
+  color: var(--text);
+  font-family: Tahoma, Geneva, Arial, sans-serif;
+  font-size: 14px;
+}
+::-webkit-scrollbar {
+  width: 15px;
+  height: 15px;
+}
+::-webkit-scrollbar-track {
+  background: #d7d7d7;
+  border-left: 1px solid #888;
+}
+::-webkit-scrollbar-thumb {
+  border: 2px solid #d7d7d7;
+  border-radius: 0;
+  background: #888;
+}
+.retro-desktop {
+  min-height: 100dvh;
+  padding: 24px 18px;
+  background-image: radial-gradient(
+    var(--retro-desktop-dot) 0.6px,
+    transparent 0.6px
+  );
+  background-size: 4px 4px;
+}
+.retro-app {
+  max-width: 1120px;
+  min-width: 0;
+  margin: 0 auto;
+  border: 1px solid #111;
+  padding: 3px;
+  background: var(--surface-raised);
+  box-shadow:
+    inset 1px 1px #fff,
+    inset -1px -1px #888,
+    3px 3px #888;
+}
+.retro-app-title,
+.retro-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 25px;
+  border: 1px solid #333;
+  background: repeating-linear-gradient(
+    to bottom,
+    #83aaa3 0,
+    #83aaa3 1px,
+    #dcefe9 1px,
+    #dcefe9 3px
+  );
+  color: var(--retro-teal);
+}
+.retro-app-title {
+  background: repeating-linear-gradient(
+    to bottom,
+    #857199 0,
+    #857199 1px,
+    #d8cce6 1px,
+    #d8cce6 3px
+  );
+}
+.retro-app-title strong,
+.retro-titlebar h1,
+.retro-titlebar h2 {
+  margin: 0;
+  padding: 1px 12px;
+  background: var(--retro-teal-soft);
+  font:
+    bold 14px/20px Tahoma,
+    Geneva,
+    Arial,
+    sans-serif;
+  letter-spacing: 0;
+}
+.retro-app-title strong {
+  background: var(--retro-purple);
+  color: #fff;
+}
+.retro-menu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 7px 5px;
+  border-bottom: 1px solid #777;
+}
+.retro-menu a {
+  display: block;
+  padding: 5px 12px;
+  border: 1px solid transparent;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 18px;
+  text-decoration: none;
+}
+.retro-menu a:hover {
+  background: var(--retro-teal-soft);
+  border-color: #7d9f98;
+}
+.retro-menu a[aria-current="page"] {
+  background: var(--retro-teal);
+  color: #fff;
+  border-color: #164c49;
+  box-shadow:
+    inset 1px 1px #76a49d,
+    1px 1px #777;
+  font-weight: bold;
+}
+.retro-app-content {
+  min-width: 0;
+  padding: 12px;
+}
+.retro-status {
+  padding: 5px 8px;
+  border-top: 1px solid #888;
+  background: var(--retro-teal-soft);
+  color: #375451;
+  font-size: 12px;
+  line-height: 18px;
+}
+.retro-panel {
+  border: 1px solid #333;
+  background: #eeeaf2;
+  box-shadow: 1px 1px #888;
+}
+.retro-panel-body {
+  padding: 16px;
+}
+.retro-loading,
+.retro-error {
+  padding: 24px 12px;
+  margin: 0;
+}
+.retro-error h1 {
+  color: var(--retro-danger);
+  font-size: 18px;
+  letter-spacing: 0;
+}
+.retro-app .button,
+.modal .button {
+  min-height: 31px;
+  padding: 5px 12px;
+  border: 1px solid #444;
+  border-radius: 2px;
+  box-shadow:
+    inset 1px 1px #fff,
+    inset -1px -1px #999,
+    1px 1px #aaa;
+  background: var(--surface-raised);
+  color: var(--text);
+  font:
+    14px/18px Tahoma,
+    Geneva,
+    Arial,
+    sans-serif;
+}
+.retro-app .button-primary,
+.modal .button-primary {
+  background: var(--retro-teal);
+  color: #fff;
+  border-color: #164c49;
+  box-shadow:
+    inset 1px 1px #76a49d,
+    inset -1px -1px #103c39,
+    1px 1px #aaa;
+  font-weight: bold;
+}
+.retro-app .button:hover,
+.modal .button:hover {
+  background: #eeeaf2;
+  color: var(--text);
+}
+.retro-app .button-primary:hover,
+.modal .button-primary:hover {
+  background: var(--accent-hover);
+  color: #fff;
+}
+.retro-app .button:active,
+.modal .button:active {
+  box-shadow: inset 1px 1px #777;
+}
+.retro-app .button:disabled,
+.modal .button:disabled {
+  color: #777;
+  background: #ddd;
+}
+.retro-app .field {
+  gap: 5px;
+}
+.retro-app .field-label {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: normal;
+}
+.retro-app .field-hint {
+  color: var(--muted);
+  font-size: 13px;
+}
+.retro-app input[aria-label="Search records"] {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: #fff;
+}
+.retro-app .field input,
+.retro-app .field select,
+.retro-app .field textarea,
+.modal .field input,
+.modal .field select,
+.modal .field textarea {
+  min-height: 34px;
+  padding: 6px 8px;
+  border: 1px solid #555;
+  border-radius: 0;
+  background: #fff;
+  color: #111;
+  box-shadow: inset 1px 1px #aaa;
+  font:
+    14px/20px Tahoma,
+    Geneva,
+    Arial,
+    sans-serif;
+}
+.retro-app :is(button, a, input, textarea, select):focus-visible,
+.modal :is(button, input, textarea, select):focus-visible {
+  outline: 2px dotted var(--retro-teal);
+  outline-offset: 3px;
+}
+.settings-panel {
+  max-width: 560px;
+}
+.settings-panel .form-stack {
+  gap: 18px;
+}
+.settings-storage-note {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.settings-account {
+  margin-top: 18px;
+}
+.modal {
+  border: 1px solid #111;
+  border-radius: 0;
+  padding: 3px 14px 14px;
+  background: var(--surface-raised);
+  color: var(--text);
+  box-shadow:
+    inset 1px 1px #fff,
+    3px 3px #555;
+}
+.modal-heading {
+  margin: 0 -11px 14px;
+  padding: 6px 8px;
+  border-bottom: 1px solid #555;
+  background: repeating-linear-gradient(
+    to bottom,
+    #857199 0,
+    #857199 1px,
+    #e8e0f3 1px,
+    #e8e0f3 3px
+  );
+}
+.modal-heading-copy {
+  background: var(--retro-purple-soft);
+  color: var(--retro-purple);
+  padding: 2px 6px;
+}
+.modal-title {
+  font-size: 15px;
+  letter-spacing: 0;
+}
+.modal-description {
+  font-size: 13px;
+}
+@media (max-width: 600px) {
+  .retro-desktop {
+    padding: 8px;
+  }
+  .retro-menu {
+    gap: 3px;
+    padding: 6px 2px;
+  }
+  .retro-menu a {
+    padding: 5px 7px;
+    font-size: 13px;
+  }
+  .retro-app-content {
+    padding: 8px;
+  }
+  .retro-panel-body {
+    padding: 12px;
+  }
+  .retro-app .field input,
+  .retro-app .field textarea,
+  .retro-app .field select,
+  .modal .field input,
+  .modal .field textarea,
+  .modal .field select {
+    font-size: 16px;
+  }
+}
