@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronDown, Folder, Pencil, Search, Users, X } from "lucide-react";
+import { toast } from "sonner";
+import { Check, ChevronDown, Folder, Pencil, Search, Users, X } from "lucide-react";
 import type { CapturedRecord, RecordKind } from "@/lib/records/types";
 import { briefRecordTitle } from "@/lib/records/title";
 import {
@@ -315,6 +316,8 @@ function RecordCard({
   timezone: string;
   onEdit: () => void;
 }) {
+  const { mutate, refresh } = useApp();
+  const [archiving, setArchiving] = useState(false);
   const progress = deadlineProgress(record.created_at, record.deadline, now);
   const legacy = record.source === "legacy",
     heading = briefRecordTitle(record.title, record.kind, record.content);
@@ -327,14 +330,35 @@ function RecordCard({
         <span className={styles.collectionLabel}>{record.collection}</span>
         <span className={styles.kind}>{record.kind}</span>
         {!legacy && (
-          <button
-            className={styles.correct}
-            aria-label={`Edit ${heading}`}
-            onClick={onEdit}
-          >
-            <Pencil size={13} />
-            Edit
-          </button>
+          <div className={styles.cardActions}>
+            <button
+              className={styles.correct}
+              aria-label={`Edit ${heading}`}
+              onClick={onEdit}
+            >
+              <Pencil size={13} />
+              Edit
+            </button>
+            <button
+              className={`${styles.correct} ${styles.done}`}
+              aria-label={`Mark ${heading} as done`}
+              disabled={archiving}
+              onClick={async () => {
+                if (archiving) return;
+                setArchiving(true);
+                const result = await mutate(`/api/records/${record.id}`, undefined, "DELETE");
+                if (result) {
+                  await refresh();
+                  toast.success("Marked done and removed from active records.");
+                } else {
+                  setArchiving(false);
+                }
+              }}
+            >
+              <Check size={13} />
+              Done
+            </button>
+          </div>
         )}
       </div>
       <h3>{heading}</h3>
